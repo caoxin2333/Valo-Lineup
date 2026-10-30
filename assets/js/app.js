@@ -7,6 +7,8 @@
   const MAP_CN = window.MAP_CN || {};
   const PHOTO_SOURCES = window.PHOTO_SOURCES || [];
   const agentById = Object.fromEntries(AGENTS.map((a) => [a.id, a]));
+  // Set window.VALO_LINK_ONLY_VIDEO = true where iframes are blocked: videos then open on their own site.
+  const LINK_ONLY_VIDEO = window.VALO_LINK_ONLY_VIDEO === true;
 
   // ---------- i18n ----------
   const I18N = {
@@ -38,6 +40,7 @@
       photos: "图文教程",
       noVideo: "这个点位暂无视频。",
       openVideo: "打开视频 ↗",
+      watchOn: "在 {site} 观看 ↗",
       openOriginal: "在原网站观看 / 给作者点赞 ↗",
       photoLibrary: "图文点位库",
       photoLibrarySub: "每个点位都有站位、瞄准、落点截图，按地图选择：",
@@ -78,6 +81,7 @@
       photos: "Photo Guide",
       noVideo: "No video for this lineup yet.",
       openVideo: "Open video ↗",
+      watchOn: "Watch on {site} ↗",
       openOriginal: "Watch on the original site / support the creator ↗",
       photoLibrary: "Photo lineup library",
       photoLibrarySub: "Stand, aim and result screenshots for every lineup — pick a map:",
@@ -288,6 +292,10 @@
 
   function videoEmbed(v) {
     if (!v) return `<div class="empty">${t("noVideo")}</div>`;
+    if (LINK_ONLY_VIDEO && (v.type === "youtube" || v.type === "bilibili")) {
+      const site = v.type === "youtube" ? "YouTube" : "Bilibili";
+      return `<a class="video-link" href="${esc(videoSourceUrl(v))}" target="_blank" rel="noopener">▶ ${t("watchOn").replace("{site}", site)}</a>`;
+    }
     let player = "";
     switch (v.type) {
       case "youtube": {
@@ -373,7 +381,7 @@
 
     app.querySelectorAll("[data-tab]").forEach((b) =>
       b.addEventListener("click", () => {
-        history.replaceState(null, "", `#/lineup/${encodeURIComponent(id)}/${b.dataset.tab}`);
+        try { history.replaceState(null, "", `#/lineup/${encodeURIComponent(id)}/${b.dataset.tab}`); } catch (e) { /* ignore */ }
         viewLineup(id, b.dataset.tab);
       })
     );
@@ -438,9 +446,11 @@
   search.addEventListener("input", () => {
     const q = search.value.trim();
     const target = q ? `#/search/${encodeURIComponent(q)}` : "#/";
-    if (location.hash.startsWith("#/search/")) history.replaceState(null, "", target);
-    else history.pushState(null, "", target);
-    route();
+    try {
+      if (location.hash.startsWith("#/search/")) history.replaceState(null, "", target);
+      else history.pushState(null, "", target);
+    } catch (e) { /* history may be locked down in sandboxed frames */ }
+    if (q) viewSearch(q); else route();
   });
 
   // ---------- language ----------
