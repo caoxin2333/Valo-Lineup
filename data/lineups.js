@@ -28,7 +28,7 @@ window.LINEUPS = [
   { id: "sova-ascent-2026", agent: "sova", map: "Ascent", side: "both", kind: "guide", lang: "en",
     ability: "Recon Bolt / Shock Bolt", title: "Sova Lineups Ascent 2026 — full map",
     video: { type: "youtube", id: "MMni5F7Pfl0" } },
-  { id: "sova-ascent-b-defense", agent: "sova", map: "Ascent", side: "defense", site: "B", lang: "en",
+  { id: "sova-ascent-b-defense", agent: "sova", map: "Ascent", side: "defense", site: "B", kind: "guide", lang: "en",
     ability: "Recon Bolt / Shock Bolt", title: "5 Best Sova Lineups for Ascent B Defense", difficulty: 1,
     video: { type: "youtube", id: "7IXyGyczEt8" } },
   { id: "sova-ascent-bili", agent: "sova", map: "Ascent", side: "both", kind: "guide", lang: "zh",
@@ -133,7 +133,7 @@ window.LINEUPS = [
   { id: "killjoy-breeze", agent: "killjoy", map: "Breeze", side: "both", kind: "guide", lang: "en",
     ability: "Nanoswarm / Alarmbot / Turret", title: "Radiant Killjoy Lineups on Breeze",
     video: { type: "youtube", id: "kVxDiUezAVQ" } },
-  { id: "killjoy-lotus-molly", agent: "killjoy", map: "Lotus", side: "both", lang: "en",
+  { id: "killjoy-lotus-molly", agent: "killjoy", map: "Lotus", side: "both", kind: "guide", lang: "en",
     ability: "Nanoswarm", title: "3 Molly Lineups on Lotus Killjoy Mains Must Know",
     video: { type: "youtube", id: "-eBxMSBolBM" } },
 
@@ -310,7 +310,7 @@ window.LINEUPS = [
   { id: "raze-sage-boosts", agent: ["raze", "sage"], map: "All", side: "both", kind: "guide", lang: "en",
     ability: "Blast Pack / Barrier Orb", title: "Best Raze / Sage Boosts", tags: ["boost"],
     video: { type: "youtube", id: "gAdRbm8Dh8E" } },
-  { id: "breach-breeze-ult-boost", agent: ["breach", "sage"], map: "Breeze", side: "both", lang: "en",
+  { id: "breach-breeze-ult-boost", agent: ["breach", "sage"], map: "Breeze", side: "both", kind: "guide", lang: "en",
     ability: "Rolling Thunder", title: "Breach Ult Boosting on Breeze (God Spots Explained)", tags: ["boost"],
     video: { type: "youtube", id: "jYWc9xAcoe8" } },
 ];

@@ -1,19 +1,94 @@
 # Valo Lineup · 无畏契约点位教程
 
-A static website listing Valorant lineups for every agent. Each lineup can have a **video tutorial (视频教程)** and a **step-by-step photo guide (图文教程)**.
+A static website of Valorant lineups for every agent. Each lineup page shows an **embedded video (视频教程)** and a **step-by-step photo guide (图文教程)**: stand → aim → result.
 
-This is a plain HTML/CSS/JS site with no build step. You can host it anywhere, including GitHub Pages.
+This is a plain HTML/CSS/JS site with no build step.
+
+## Put it online (GitHub Pages)
+
+Videos play inside the page only when the site is served from a real web host. The free option is GitHub Pages:
+
+1. Open the repository on GitHub and go to **Settings → Pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**.
+3. Pick the branch `claude/vigilant-franklin-sf5gge` (or `main` once it's merged) and the folder `/ (root)`, then **Save**.
+4. After a minute or two the site is live at **https://caoxin2333.github.io/Valo-Lineup/**.
+
+Every push to that branch updates the site.
 
 ## Pages
 
 | URL | What it shows |
 | --- | --- |
-| `#/` | All agents, filterable by role (决斗者 / 先锋 / 控场者 / 哨卫), with a lineup count on each |
-| `#/agent/sova` | One agent's lineups, filterable by map, attack/defense and ability |
-| `#/lineup/<id>` | One lineup, with a **Video** tab and a **Photo Guide** tab (click a photo to enlarge it; use ← → to move between photos) |
-| `#/search/<words>` | Search every lineup by agent, map, site, ability, title or tag |
+| `#/` | All agents, filterable by role, with lineup and guide counts |
+| `#/agent/sova` | One agent: **点位教程** (single lineups), **视频合集** (full-map video guides) and links to a photo lineup library for each map |
+| `#/lineup/<id>` | One lineup: the embedded video, then the numbered photo steps (click a photo to enlarge it) |
+| `#/maker` | **点位制作工具**, which builds a new lineup with both a video and photos |
+| `#/search/<words>` | Search everything |
 
-The 中文 / EN button in the top bar switches the interface language.
+## Add a lineup with the lineup maker (点位制作工具)
+
+Click **＋ 添加点位** in the top bar.
+
+1. **Fill in the lineup details:** agent, map, side, site, ability and title.
+2. **Add the video**, using one of these:
+   - **Your own recording (recommended).** Record the lineup with OBS, NVIDIA or Xbox Game Bar, then pick the file.
+     - Pause on the stand, aim and result moments and press **📸 截取** to turn each frame into a photo step.
+     - Set a start and end point and press **生成片段** so the site gets a short clip instead of the whole recording.
+   - **A YouTube or Bilibili link** with start and end times, if the lineup is part of a longer video. Linked videos can't be captured, so take screenshots in game (Win+Shift+S) and paste them with **Ctrl+V**, or upload them.
+3. **Write a caption for each photo step.** You can reorder or remove steps.
+4. **Press 预览** to see the finished lineup page, then **下载点位包**.
+
+The zip contains `media/<agent>/…` (the photos, plus the clip if you recorded one) and a `lineup-<id>.js` file. To add it to the site:
+
+1. Put the `media` folder in the repository root. On GitHub, use **Add file → Upload files** and drag the folder in.
+2. Paste the code from `lineup-<id>.js` into `data/lineups.js`, right under `window.LINEUPS = [`.
+3. Commit. The lineup appears on the site with both its video and photos.
+
+Keep clips short. GitHub rejects files over 100 MB, and a 10–20 second clip is usually 2–6 MB.
+
+## Lineup data format
+
+Lineups are stored in `data/lineups.js`:
+
+```js
+{
+  id: "sova-ascent-a-main-recon",
+  agent: "sova",                 // id from data/agents.js (or a list of ids)
+  map: "Ascent",                 // or "All"
+  side: "attack",                // "attack" | "defense" | "both"
+  site: "A",
+  ability: "Recon Bolt",
+  title: "A Main → A Site 侦察箭",
+  difficulty: 1,                 // 1–3, optional
+  lang: "zh",                    // video language, optional
+  notes: "Optional tips shown above the tutorial",
+  video: { type: "file", src: "media/sova/sova-ascent-a-main-recon.webm" },
+  steps: [
+    { img: "media/sova/sova-ascent-a-main-recon-1.jpg", caption: "站位：..." },
+    { img: "media/sova/sova-ascent-a-main-recon-2.jpg", caption: "瞄准：..." },
+    { img: "media/sova/sova-ascent-a-main-recon-3.jpg", caption: "落点：..." },
+  ],
+},
+```
+
+`video` can be any of the following:
+
+```js
+{ type: "file",     src: "media/sova/x.webm", start: 5, end: 20 }  // start/end are optional
+{ type: "youtube",  id: "VIDEO_ID", start: 65, end: 90 }          // plays only that part
+{ type: "bilibili", bvid: "BV1xxxxxxxxx", page: 1, start: 65 }
+{ type: "link",     url: "https://..." }                          // opens in a new tab
+```
+
+Set `kind: "guide"` on a video that covers many lineups. It's then listed under 视频合集 instead of 点位教程.
+
+## Where the existing content comes from
+
+The 88 video guides in `data/lineups.js` (77 YouTube, 11 Bilibili) were collected from YouTube and Bilibili search in October 2026. Each one covers many lineups on a map, so they are all marked as `kind: "guide"`. They are **embedded, not copied**: they play from the original site, and each one links back to its creator.
+
+For photos, the site doesn't copy other people's screenshots. A guide's photo section, and each agent page, link to the matching agent and map page on [Blitz.gg](https://blitz.gg/valorant/lineups/sova/ascent), which shows stand, aim and result images. You can add more sources to `PHOTO_SOURCES` in `data/agents.js`.
+
+YouTube is blocked in mainland China. Bilibili videos and your own uploaded clips play there.
 
 ## Run it locally
 
@@ -21,66 +96,10 @@ The 中文 / EN button in the top bar switches the interface language.
 python3 -m http.server 8000
 ```
 
-Then open http://localhost:8000. You can also double-click `index.html`.
+Then open http://localhost:8000.
 
-## Add a lineup
+## Credits
 
-1. Put your screenshots (and optionally an `.mp4`) in a folder such as `media/sova/`.
-2. Add an entry to `data/lineups.js`:
-
-```js
-{
-  id: "sova-ascent-a-main-recon",
-  agent: "sova",                 // id from data/agents.js
-  map: "Ascent",
-  side: "attack",                // "attack" or "defense"
-  site: "A",
-  ability: "Recon Bolt",
-  title: "A Main → A Site 侦察箭",
-  difficulty: 1,                 // 1–3, optional
-  notes: "Optional tips shown above the tutorial",
-  video: { type: "bilibili", bvid: "BV1xxxxxxxxx" },
-  steps: [
-    { img: "media/sova/ascent-a-1.jpg", caption: "站位：..." },
-    { img: "media/sova/ascent-a-2.jpg", caption: "瞄准：..." },
-    { img: "media/sova/ascent-a-3.jpg", caption: "落点：..." },
-  ],
-  tags: ["recon"],
-},
-```
-
-The `video` field accepts any one of these:
-
-```js
-{ type: "youtube",  id: "VIDEO_ID", start: 12 }     // start is in seconds and is optional
-{ type: "bilibili", bvid: "BV1xxxxxxxxx", page: 1 }
-{ type: "file",     src: "media/sova/xxx.mp4" }    // a video stored in this repo
-{ type: "link",     url: "https://..." }           // any other site; opens in a new tab
-```
-
-A lineup can have just a video, just photos, or both. The card thumbnail is the last photo (usually the landing spot), or the YouTube thumbnail. Set `thumbnail` to use a different image.
-
-Other optional fields:
-
-- `kind: "guide"` marks a video that covers many lineups on one map (shown as 合集).
-- `lang: "zh"` / `"en"` is the video's language, which you can filter by on the agent page.
-- `agent` can be a list, such as `["omen", "clove"]`, for a video that covers several agents.
-- `map: "All"` is for every-map videos.
-
-## Where the content comes from
-
-The 88 videos in `data/lineups.js` (77 YouTube, 11 Bilibili) were collected from YouTube and Bilibili search in October 2026. They lean towards recent uploads, full-map guides and well-known creators. The videos are **embedded, not copied**: they play from the original site, and each one has a link back to its creator.
-
-For photo lineups, the site doesn't copy anyone's screenshots. When a lineup has no `steps` of its own, the 图文教程 tab and each agent page link to the matching agent and map page on [Blitz.gg](https://blitz.gg/valorant/lineups/sova/ascent), which shows stand, aim and result images. You can add more sources to `PHOTO_SOURCES` in `data/agents.js`. To host your own photo guides, add `steps` with your own screenshots.
-
-Note: YouTube is blocked in mainland China. Bilibili entries (`lang: "zh"`) play there.
-
-## Agents and maps
-
-Agents and maps are listed in `data/agents.js`. To add a new agent, add a line with its `id`, `name`, optional Chinese name `cn` and `role`. To show a portrait instead of initials, also set `avatar: "media/agents/sova.png"`.
-
-## Deploy to GitHub Pages
-
-In the repository, go to **Settings → Pages**, choose **Deploy from a branch**, and pick your branch with the `/ (root)` folder. The `.nojekyll` file is already in place.
+The lineup maker's zip export uses [JSZip](https://stuk.github.io/jszip/) 3.10.1 (MIT), bundled in `assets/vendor/`.
 
 > Unofficial fan site, not affiliated with Riot Games.

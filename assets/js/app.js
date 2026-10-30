@@ -15,7 +15,7 @@
     zh: {
       searchPlaceholder: "搜索英雄、地图、技能、点位…",
       heroTitle: "英雄点位",
-      heroSub: "选择英雄，查看视频教程和图文教程",
+      heroSub: "每个点位都有视频教程和图文教程（站位 → 瞄准 → 落点）",
       all: "全部",
       allMaps: "全地图",
       duelist: "决斗者",
@@ -23,6 +23,7 @@
       controller: "控场者",
       sentinel: "哨卫",
       lineups: "个点位",
+      guides: "个合集",
       noLineups: "暂无点位",
       home: "首页",
       map: "地图",
@@ -34,8 +35,14 @@
       language: "语言",
       site: "包点",
       guide: "合集",
-      emptyFilter: "没有符合筛选条件的点位。",
-      emptyAgent: "这个英雄还没有视频点位。可以先看下方的图文点位库，或在 data/lineups.js 里添加！",
+      lineupsSection: "点位教程",
+      lineupsSectionSub: "单个点位：视频 + 图文步骤",
+      guidesSection: "视频合集",
+      guidesSectionSub: "一个视频讲解整张地图的多个点位",
+      noSingleLineups: "这个英雄还没有单个点位教程。",
+      addFirst: "＋ 用点位制作工具添加",
+      addLineup: "＋ 添加点位",
+      emptyFilter: "没有符合筛选条件的内容。",
       video: "视频教程",
       photos: "图文教程",
       noVideo: "这个点位暂无视频。",
@@ -44,19 +51,23 @@
       openOriginal: "在原网站观看 / 给作者点赞 ↗",
       photoLibrary: "图文点位库",
       photoLibrarySub: "每个点位都有站位、瞄准、落点截图，按地图选择：",
-      photoExternal: "这个视频合集没有自带截图。下面是同英雄同地图的图文点位（站位 → 瞄准 → 落点）：",
+      photoExternal: "这是一个多点位的视频合集，没有自带截图。同英雄同地图的图文点位（站位 → 瞄准 → 落点）：",
+      missingPhotos: "这个点位还没有图文步骤。",
       hasVideo: "视频",
+      hasPhotos: "图文",
       difficulty: "难度",
       notFound: "找不到这个页面。",
       back: "返回首页",
       searchResults: "搜索结果",
       searchEmpty: "没有找到相关点位。",
+      previewBanner: "预览 — 这个点位还没有保存到网站。",
+      backToMaker: "← 返回制作工具",
       footer: "Valo Lineup · 非官方粉丝站，与 Riot Games 无关 · 视频版权归原作者所有",
     },
     en: {
       searchPlaceholder: "Search agents, maps, abilities, lineups…",
       heroTitle: "Agent Lineups",
-      heroSub: "Pick an agent to see video and photo tutorials",
+      heroSub: "Every lineup has a video and a photo guide (stand → aim → result)",
       all: "All",
       allMaps: "All maps",
       duelist: "Duelist",
@@ -64,6 +75,7 @@
       controller: "Controller",
       sentinel: "Sentinel",
       lineups: "lineups",
+      guides: "guides",
       noLineups: "No lineups yet",
       home: "Home",
       map: "Map",
@@ -75,8 +87,14 @@
       language: "Language",
       site: "Site",
       guide: "Full guide",
-      emptyFilter: "No lineups match these filters.",
-      emptyAgent: "No video lineups for this agent yet. Try the photo library below, or add some in data/lineups.js!",
+      lineupsSection: "Lineups",
+      lineupsSectionSub: "One lineup each: video + photo steps",
+      guidesSection: "Video guides",
+      guidesSectionSub: "One video covering many lineups on a map",
+      noSingleLineups: "No single lineups for this agent yet.",
+      addFirst: "＋ Add one with the lineup maker",
+      addLineup: "＋ Add lineup",
+      emptyFilter: "Nothing matches these filters.",
       video: "Video",
       photos: "Photo Guide",
       noVideo: "No video for this lineup yet.",
@@ -85,13 +103,17 @@
       openOriginal: "Watch on the original site / support the creator ↗",
       photoLibrary: "Photo lineup library",
       photoLibrarySub: "Stand, aim and result screenshots for every lineup — pick a map:",
-      photoExternal: "This video guide has no screenshots of its own. Photo lineups (stand → aim → result) for the same agent and map:",
+      photoExternal: "This is a multi-lineup video guide without screenshots of its own. Photo lineups (stand → aim → result) for the same agent and map:",
+      missingPhotos: "This lineup has no photo steps yet.",
       hasVideo: "Video",
+      hasPhotos: "Photos",
       difficulty: "Difficulty",
       notFound: "Page not found.",
       back: "Back to home",
       searchResults: "Search results",
       searchEmpty: "No lineups found.",
+      previewBanner: "Preview — this lineup is not saved to the site yet.",
+      backToMaker: "← Back to the lineup maker",
       footer: "Valo Lineup · Unofficial fan site, not affiliated with Riot Games · Videos belong to their creators",
     },
   };
@@ -116,7 +138,18 @@
   const agentSubName = (a) => (lang === "zh" && a.cn ? a.name : a.cn || "");
   const mapName = (m) => (m === "All" ? t("allMaps") : lang === "zh" && MAP_CN[m] ? MAP_CN[m] : m);
   const agentsOf = (l) => (Array.isArray(l.agent) ? l.agent : [l.agent]);
+  const isGuide = (l) => l.kind === "guide";
   const lineupsFor = (agentId) => LINEUPS.filter((l) => agentsOf(l).includes(agentId));
+
+  function setHash(hash, replace) {
+    try {
+      if (replace) history.replaceState(null, "", hash);
+      else history.pushState(null, "", hash);
+      return true;
+    } catch (e) {
+      return false; // history may be locked down in sandboxed frames
+    }
+  }
 
   function photoLinks(agentId, maps) {
     return PHOTO_SOURCES.flatMap((src) =>
@@ -128,10 +161,15 @@
     );
   }
 
+  const secs = (v) => Math.max(0, parseInt(v, 10) || 0);
+
   function videoSourceUrl(v) {
     if (!v) return "";
-    if (v.type === "youtube") return `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${v.start ? `&t=${parseInt(v.start, 10)}s` : ""}`;
-    if (v.type === "bilibili") return `https://www.bilibili.com/video/${encodeURIComponent(v.bvid)}/${v.page > 1 ? `?p=${parseInt(v.page, 10)}` : ""}`;
+    if (v.type === "youtube") return `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${v.start ? `&t=${secs(v.start)}s` : ""}`;
+    if (v.type === "bilibili") {
+      const q = [v.page > 1 ? `p=${secs(v.page)}` : "", v.start ? `t=${secs(v.start)}` : ""].filter(Boolean).join("&");
+      return `https://www.bilibili.com/video/${encodeURIComponent(v.bvid)}/${q ? "?" + q : ""}`;
+    }
     if (v.type === "link") return v.url;
     return "";
   }
@@ -184,13 +222,16 @@
       </div>
       <div class="agent-grid">
         ${list.map((a) => {
-          const n = lineupsFor(a.id).length;
+          const all = lineupsFor(a.id);
+          const single = all.filter((l) => !isGuide(l)).length;
+          const guides = all.length - single;
+          const parts = [single ? `<b>${single}</b> ${t("lineups")}` : "", guides ? `<b>${guides}</b> ${t("guides")}` : ""].filter(Boolean);
           return `
-            <a class="agent-card role-${esc(a.role)}${n ? "" : " no-lineups"}" href="#/agent/${esc(a.id)}">
+            <a class="agent-card role-${esc(a.role)}${all.length ? "" : " no-lineups"}" href="#/agent/${esc(a.id)}">
               ${avatar(a)}
               <div class="name">${esc(agentName(a))}</div>
               ${agentSubName(a) ? `<div class="cn">${esc(agentSubName(a))}</div>` : ""}
-              <div class="count">${n ? `<b>${n}</b> ${t("lineups")}` : t("noLineups")}</div>
+              <div class="count">${parts.length ? parts.join(" · ") : t("noLineups")}</div>
             </a>`;
         }).join("")}
       </div>`;
@@ -205,21 +246,21 @@
     if (!a) return viewNotFound();
 
     const all = lineupsFor(id);
-    const f = (state.filters[id] ||= { map: "all", side: "all", ability: "all", lang: "all" });
+    const f = (state.filters[id] ||= { map: "all", side: "all", lang: "all" });
 
     const mapsUsed = MAPS.filter((m) => all.some((l) => l.map === m))
       .concat([...new Set(all.map((l) => l.map))].filter((m) => !MAPS.includes(m) && m !== "All"))
       .concat(all.some((l) => l.map === "All") ? ["All"] : []);
-    const abilities = [...new Set(all.map((l) => l.ability).filter(Boolean))];
     const langs = [...new Set(all.map((l) => l.lang).filter(Boolean))];
     const sides = ["attack", "defense", "both"].filter((s) => all.some((l) => l.side === s));
 
     const shown = all.filter((l) =>
       (f.map === "all" || l.map === f.map) &&
       (f.side === "all" || l.side === f.side) &&
-      (f.ability === "all" || l.ability === f.ability) &&
       (f.lang === "all" || l.lang === f.lang)
     );
+    const singles = shown.filter((l) => !isGuide(l));
+    const guides = shown.filter(isGuide);
 
     const countBy = (key, val) => all.filter((l) => l[key] === val).length;
     const filterRow = (label, key, values, render = esc) => `
@@ -232,6 +273,7 @@
       </div>`;
 
     const photo = photoLinks(id, MAPS);
+    const grid = (items, showAgent) => `<div class="lineup-grid">${items.map((l) => lineupCard(l, showAgent)).join("")}</div>`;
 
     app.innerHTML = `
       <div class="crumbs"><a href="#/">${t("home")}</a> / ${esc(agentName(a))}</div>
@@ -239,23 +281,38 @@
         ${avatar(a, "lg")}
         <div>
           <h1>${esc(agentName(a))}${agentSubName(a) ? ` <span class="sub">${esc(agentSubName(a))}</span>` : ""}</h1>
-          <div class="role">${t(a.role)} · ${all.length} ${t("lineups")}</div>
+          <div class="role">${t(a.role)}</div>
         </div>
       </div>
       ${all.length ? `
         ${filterRow(t("map"), "map", mapsUsed, mapName)}
         ${sides.length > 1 ? filterRow(t("side"), "side", sides, (s) => t(s)) : ""}
-        ${langs.length > 1 ? filterRow(t("language"), "lang", langs, (c) => esc(LANG_LABEL[c] || c)) : ""}
-        ${shown.length ? `<div class="lineup-grid">${shown.map((l) => lineupCard(l, false)).join("")}</div>`
-                       : `<div class="empty">${t("emptyFilter")}</div>`}
-      ` : `<div class="empty">${t("emptyAgent")}</div>`}
+        ${langs.length > 1 ? filterRow(t("language"), "lang", langs, (c) => esc(LANG_LABEL[c] || c)) : ""}` : ""}
+
+      <section class="section">
+        <h2>${t("lineupsSection")} <span class="count-pill">${singles.length}</span></h2>
+        <p class="sub">${t("lineupsSectionSub")}</p>
+        ${singles.length ? grid(singles, false) : `
+          <div class="empty">${all.some((l) => !isGuide(l)) ? t("emptyFilter") : t("noSingleLineups")}
+            <br><br><a class="chip active" href="#/maker/${esc(id)}">${t("addFirst")}</a></div>`}
+      </section>
+
+      ${guides.length || all.some(isGuide) ? `
+        <section class="section">
+          <h2>${t("guidesSection")} <span class="count-pill">${guides.length}</span></h2>
+          <p class="sub">${t("guidesSectionSub")}</p>
+          ${guides.length ? grid(guides, false) : `<div class="empty">${t("emptyFilter")}</div>`}
+        </section>` : ""}
+
       ${photo.length ? `
-        <h2>🖼 ${t("photoLibrary")}</h2>
-        <p class="sub">${t("photoLibrarySub")}</p>
-        <div class="chips">
-          ${photo.map((p) => `<a class="chip" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(mapName(p.map))} ↗</a>`).join("")}
-        </div>
-        <p class="source-note">${[...new Set(photo.map((p) => p.source))].map(esc).join(" · ")}</p>` : ""}`;
+        <section class="section">
+          <h2>${t("photoLibrary")}</h2>
+          <p class="sub">${t("photoLibrarySub")}</p>
+          <div class="chips">
+            ${photo.map((p) => `<a class="chip" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(mapName(p.map))} ↗</a>`).join("")}
+          </div>
+          <p class="source-note">${[...new Set(photo.map((p) => p.source))].map(esc).join(" · ")}</p>
+        </section>` : ""}`;
 
     app.querySelectorAll("[data-k]").forEach((b) =>
       b.addEventListener("click", () => { f[b.dataset.k] = b.dataset.v; viewAgent(id); })
@@ -265,6 +322,7 @@
   function lineupCard(l, showAgent) {
     const agents = agentsOf(l).map((x) => agentById[x]).filter(Boolean);
     const thumb = thumbnailOf(l);
+    const hasPhotos = l.steps && l.steps.length;
     return `
       <a class="lineup-card" href="#/lineup/${encodeURIComponent(l.id)}">
         <div class="thumb">
@@ -272,8 +330,8 @@
           ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
           <div class="badges">
             ${l.video ? `<span class="badge has-video">▶ ${t("hasVideo")}</span>` : ""}
-            ${l.kind === "guide" ? `<span class="badge guide">${t("guide")}</span>` : ""}
-            ${l.example ? `<span class="badge example">Example</span>` : ""}
+            ${hasPhotos ? `<span class="badge has-photos">🖼 ${t("hasPhotos")} ${l.steps.length}</span>` : ""}
+            ${isGuide(l) ? `<span class="badge guide">${t("guide")}</span>` : ""}
           </div>
         </div>
         <div class="body">
@@ -283,6 +341,7 @@
             <span class="badge">${esc(mapName(l.map))}</span>
             ${l.site ? `<span class="badge">${esc(l.site)}</span>` : ""}
             ${sideBadge(l.side)}
+            ${!isGuide(l) && l.ability ? `<span class="badge">${esc(l.ability)}</span>` : ""}
             ${langBadge(l.lang)}
             ${stars(l.difficulty)}
           </div>
@@ -299,19 +358,22 @@
     let player = "";
     switch (v.type) {
       case "youtube": {
-        const start = v.start ? `?start=${parseInt(v.start, 10)}` : "";
-        player = `<div class="video-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}${start}"
+        const q = [v.start ? `start=${secs(v.start)}` : "", v.end ? `end=${secs(v.end)}` : "", "rel=0"].filter(Boolean).join("&");
+        player = `<div class="video-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}?${q}"
           allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>`;
         break;
       }
       case "bilibili": {
-        const page = parseInt(v.page || 1, 10);
-        player = `<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=${encodeURIComponent(v.bvid)}&page=${page}&autoplay=0&high_quality=1"
+        const q = `bvid=${encodeURIComponent(v.bvid)}&page=${secs(v.page || 1) || 1}${v.start ? `&t=${secs(v.start)}` : ""}&autoplay=0&high_quality=1`;
+        player = `<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?${q}"
           allow="fullscreen" allowfullscreen loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"></iframe></div>`;
         break;
       }
-      case "file":
-        return `<div class="video-wrap"><video src="${esc(v.src)}" controls playsinline preload="metadata"${v.poster ? ` poster="${esc(v.poster)}"` : ""}></video></div>`;
+      case "file": {
+        // A media fragment (#t=start,end) plays just the lineup's part of a longer recording.
+        const frag = v.start || v.end ? `#t=${secs(v.start)}${v.end ? "," + secs(v.end) : ""}` : "";
+        return `<div class="video-wrap"><video src="${esc(v.src + frag)}" controls playsinline preload="metadata"${v.poster ? ` poster="${esc(v.poster)}"` : ""}></video></div>`;
+      }
       case "link":
         return `<a class="video-link" href="${esc(v.url)}" target="_blank" rel="noopener">${t("openVideo")}</a>`;
       default:
@@ -336,7 +398,7 @@
     const maps = l.map === "All" || !MAPS.includes(l.map) ? MAPS : [l.map];
     const groups = agentsOf(l).filter((x) => agentById[x]).map((x) => ({ agent: agentById[x], links: photoLinks(x, maps) }));
     return `
-      <p>${t("photoExternal")}</p>
+      <p>${isGuide(l) ? t("photoExternal") : t("missingPhotos")}</p>
       ${groups.map((g) => `
         <div class="photo-group">
           <div class="agent-line">${avatar(g.agent)} <b>${esc(agentName(g.agent))}</b></div>
@@ -346,14 +408,15 @@
         </div>`).join("")}`;
   }
 
-  function viewLineup(id, tab) {
-    const l = LINEUPS.find((x) => x.id === id);
+  // Renders one lineup. `preview` is an unsaved lineup object from the maker.
+  function viewLineup(id, preview) {
+    const l = preview || LINEUPS.find((x) => x.id === id);
     if (!l) return viewNotFound();
     const agents = agentsOf(l).map((x) => agentById[x] || { id: x, name: x, role: "" });
     const steps = l.steps || [];
-    const active = tab === "photos" || tab === "video" ? tab : (l.video ? "video" : "photos");
 
     app.innerHTML = `
+      ${preview ? `<div class="notes preview-banner">${t("previewBanner")} <a href="#/maker">${t("backToMaker")}</a></div>` : ""}
       <div class="crumbs">
         <a href="#/">${t("home")}</a> /
         ${agents.map((a) => `<a href="#/agent/${esc(a.id)}">${esc(agentName(a))}</a>`).join(", ")} /
@@ -362,7 +425,7 @@
       <div class="detail-head">
         <h1>${esc(l.title)}</h1>
         <div class="meta">
-          ${l.kind === "guide" ? `<span class="badge guide">${t("guide")}</span>` : ""}
+          ${isGuide(l) ? `<span class="badge guide">${t("guide")}</span>` : ""}
           <span class="badge">${esc(mapName(l.map))}</span>
           ${l.site ? `<span class="badge">${t("site")} ${esc(l.site)}</span>` : ""}
           ${sideBadge(l.side)}
@@ -373,18 +436,15 @@
         </div>
       </div>
       ${l.notes ? `<div class="notes">${esc(l.notes)}</div>` : ""}
-      <div class="tabs" role="tablist">
-        <button type="button" class="tab${active === "video" ? " active" : ""}" data-tab="video">▶ ${t("video")}</button>
-        <button type="button" class="tab${active === "photos" ? " active" : ""}" data-tab="photos">🖼 ${t("photos")}${steps.length ? ` (${steps.length})` : " ↗"}</button>
-      </div>
-      <div class="panel">${active === "video" ? videoEmbed(l.video) : photoPanel(l)}</div>`;
+      <section class="section">
+        <h2>▶ ${t("video")}</h2>
+        ${videoEmbed(l.video)}
+      </section>
+      <section class="section">
+        <h2>🖼 ${t("photos")}${steps.length ? ` <span class="count-pill">${steps.length}</span>` : ""}</h2>
+        ${photoPanel(l)}
+      </section>`;
 
-    app.querySelectorAll("[data-tab]").forEach((b) =>
-      b.addEventListener("click", () => {
-        try { history.replaceState(null, "", `#/lineup/${encodeURIComponent(id)}/${b.dataset.tab}`); } catch (e) { /* ignore */ }
-        viewLineup(id, b.dataset.tab);
-      })
-    );
     app.querySelectorAll("[data-step]").forEach((img) =>
       img.addEventListener("click", () => openLightbox(steps, +img.dataset.step))
     );
@@ -398,7 +458,7 @@
         ...agents.flatMap((a) => [a.name, a.cn]), ...(l.tags || [])]
         .join(" ").toLowerCase();
       return words.every((w) => hay.includes(w));
-    });
+    }).sort((a, b) => isGuide(a) - isGuide(b));
     app.innerHTML = `
       <div class="crumbs"><a href="#/">${t("home")}</a> / ${t("searchResults")}</div>
       <h1>${t("searchResults")}: “${esc(q)}”</h1>
@@ -408,6 +468,15 @@
 
   function viewNotFound() {
     app.innerHTML = `<div class="empty">${t("notFound")}<br><br><a class="chip" href="#/">${t("back")}</a></div>`;
+  }
+
+  function viewMaker(agentId) {
+    if (!window.ValoMaker) return viewNotFound();
+    window.ValoMaker.render(app, {
+      lang, esc, agentName, mapName, agentById,
+      agents: AGENTS, maps: MAPS, lineups: LINEUPS, presetAgent: agentId,
+      preview: (lineup) => { setHash("#/preview"); viewLineup(null, lineup); window.scrollTo(0, 0); },
+    });
   }
 
   // ---------- lightbox ----------
@@ -441,41 +510,40 @@
     else if (e.key === "ArrowRight") showLightbox(lbIndex + 1);
   });
 
-  // ---------- search box ----------
+  // ---------- top bar ----------
   const search = document.getElementById("global-search");
   search.addEventListener("input", () => {
     const q = search.value.trim();
-    const target = q ? `#/search/${encodeURIComponent(q)}` : "#/";
-    try {
-      if (location.hash.startsWith("#/search/")) history.replaceState(null, "", target);
-      else history.pushState(null, "", target);
-    } catch (e) { /* history may be locked down in sandboxed frames */ }
+    setHash(q ? `#/search/${encodeURIComponent(q)}` : "#/", location.hash.startsWith("#/search/"));
     if (q) viewSearch(q); else route();
   });
 
-  // ---------- language ----------
+  const addLink = document.getElementById("add-link");
   const langBtn = document.getElementById("lang-toggle");
   function applyLang() {
     document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
     langBtn.textContent = lang === "zh" ? "EN" : "中文";
     search.placeholder = t("searchPlaceholder");
+    if (addLink) addLink.textContent = t("addLineup");
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
   }
   langBtn.addEventListener("click", () => {
     lang = lang === "zh" ? "en" : "zh";
     writePref("lang", lang);
     applyLang();
-    route();
+    if (!location.hash.startsWith("#/maker") && location.hash !== "#/preview") route();
   });
 
   // ---------- router ----------
   function route() {
     const parts = location.hash.replace(/^#\/?/, "").split("/").map(decodeURIComponent);
-    const [page, arg, sub] = parts;
+    const [page, arg] = parts;
     if (page !== "search" && search.value) search.value = "";
     if (!page) viewHome();
     else if (page === "agent") viewAgent(arg);
-    else if (page === "lineup") viewLineup(arg, sub);
+    else if (page === "lineup") viewLineup(arg);
+    else if (page === "maker") viewMaker(arg);
+    else if (page === "preview") return; // stays on the maker's preview until the user navigates
     else if (page === "search") { if (search.value !== arg) search.value = arg || ""; viewSearch(arg || ""); }
     else viewNotFound();
     if (page !== "search") window.scrollTo(0, 0);

@@ -358,3 +358,119 @@ a.chip { display: inline-block; }
   .lightbox { padding: 16px; }
   .lb-prev, .lb-next { top: auto; bottom: 16px; transform: none; }
 }
+
+/* ---------- sections & badges added with the lineup maker ---------- */
+.section { margin-top: 28px; }
+.section h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 4px; }
+.section > .sub { margin-bottom: 12px; }
+.count-pill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 10px;
+  color: var(--muted);
+}
+.badge.has-photos { color: #0f1923; background: #22c55e; border-color: #22c55e; }
+.preview-banner { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.preview-banner a { text-decoration: underline; }
+
+.add-link {
+  white-space: nowrap;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+.add-link:hover { filter: brightness(1.1); }
+
+/* ---------- lineup maker ---------- */
+.maker h3 { font-size: 1rem; margin: 20px 0 8px; }
+.mk-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.mk-card h2 { margin: 0; }
+.mk-card .sub { margin: 0; }
+.mk-card.drop { outline: 2px dashed var(--accent); outline-offset: 4px; }
+
+.mk-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field > span { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+.field.wide { grid-column: 1 / -1; }
+.field.narrow { max-width: 220px; }
+.field input, .field select, .field textarea, .mk-step textarea {
+  width: 100%;
+  background: var(--bg-2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font: inherit;
+}
+.field input:focus, .field select:focus, .field textarea:focus, .mk-step textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field textarea, .mk-step textarea { resize: vertical; }
+
+.mk-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mk-range, .mk-filename { color: var(--muted); font-size: 0.88rem; font-variant-numeric: tabular-nums; margin-left: 8px; }
+.mk-status { margin: 0; color: #22c55e; font-size: 0.9rem; min-height: 1.2em; }
+.mk-status.warn { color: #fbbf24; }
+.mk-player { max-width: 960px; }
+.file-btn { cursor: pointer; align-self: flex-start; }
+.chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.chip:focus-visible, .icon-btn:focus-visible, .add-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.empty.small { padding: 20px 12px; }
+.mk-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.mk-step {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+}
+.mk-step img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 4px; background: #000; }
+.mk-step-body { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
+.mk-step .num {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff; font-weight: 800; display: grid; place-items: center;
+}
+.mk-step-tools { display: flex; flex-direction: column; gap: 4px; }
+.icon-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--card); font-size: 1rem; line-height: 1;
+}
+.icon-btn:hover:not(:disabled) { border-color: var(--muted); }
+.icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.mk-howto { margin: 0; padding-left: 20px; color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
+.mk-code {
+  margin: 0;
+  background: #0a1118;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .mk-grid { grid-template-columns: 1fr 1fr; }
+  .mk-step { grid-template-columns: 1fr auto; }
+  .mk-step img { grid-column: 1 / -1; }
+  .mk-step-tools { flex-direction: row; }
+  .mk-card { padding: 14px; }
+  .add-link { padding: 6px 10px; font-size: 0.85rem; }
+}
