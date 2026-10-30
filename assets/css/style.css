@@ -141,6 +141,16 @@ h2 { font-size: 1.25rem; margin: 32px 0 12px; }
 .badge.defense { color: #7fb4ff; border-color: #24395a; }
 .badge.example { color: #fbbf24; border-color: #5a4a1a; }
 .badge.has-video { color: #fff; background: var(--accent); border-color: var(--accent); }
+.badge.guide { color: #0f1923; background: #ece8e1; border-color: #ece8e1; }
+.badge.lang { color: #c4b5fd; border-color: #3b2f5a; }
+
+a.chip { display: inline-block; }
+.source-note { color: var(--muted); font-size: 0.85rem; margin-top: 10px; }
+.source-note a { text-decoration: underline; }
+.source-note a:hover { color: var(--text); }
+.photo-group { margin: 16px 0; }
+.photo-group .agent-line { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.photo-group .avatar { width: 28px; height: 28px; font-size: 0.7rem; }
 
 /* ---------- agent avatar ---------- */
 .avatar {
@@ -217,7 +227,18 @@ h2 { font-size: 1.25rem; margin: 32px 0 12px; }
   position: relative;
   overflow: hidden;
 }
-.lineup-card .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lineup-card .thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.lineup-card .thumb-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: linear-gradient(135deg, #1b2733, #2a1a24);
+}
 .lineup-card .thumb .badges { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
 .lineup-card .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
 .lineup-card .title { font-weight: 700; }

@@ -58,9 +58,22 @@ The `video` field accepts any one of these:
 { type: "link",     url: "https://..." }           // any other site; opens in a new tab
 ```
 
-A lineup can have just a video, just photos, or both. The card thumbnail is the last photo (usually the landing spot). Set `thumbnail` to use a different image.
+A lineup can have just a video, just photos, or both. The card thumbnail is the last photo (usually the landing spot), or the YouTube thumbnail. Set `thumbnail` to use a different image.
 
-The two `example-...` entries and the `media/examples/` folder are placeholders. Delete them once you've added real lineups.
+Other optional fields:
+
+- `kind: "guide"` marks a video that covers many lineups on one map (shown as 合集).
+- `lang: "zh"` / `"en"` is the video's language, which you can filter by on the agent page.
+- `agent` can be a list, such as `["omen", "clove"]`, for a video that covers several agents.
+- `map: "All"` is for every-map videos.
+
+## Where the content comes from
+
+The 88 videos in `data/lineups.js` (77 YouTube, 11 Bilibili) were collected from YouTube and Bilibili search in October 2026. They lean towards recent uploads, full-map guides and well-known creators. The videos are **embedded, not copied**: they play from the original site, and each one has a link back to its creator.
+
+For photo lineups, the site doesn't copy anyone's screenshots. When a lineup has no `steps` of its own, the 图文教程 tab and each agent page link to the matching agent and map page on [Blitz.gg](https://blitz.gg/valorant/lineups/sova/ascent), which shows stand, aim and result images. You can add more sources to `PHOTO_SOURCES` in `data/agents.js`. To host your own photo guides, add `steps` with your own screenshots.
+
+Note: YouTube is blocked in mainland China. Bilibili entries (`lang: "zh"`) play there.
 
 ## Agents and maps
 

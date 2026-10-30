@@ -9,6 +9,7 @@ window.AGENTS = [
   { id: "astra",     name: "Astra",     cn: "星礈",   role: "controller" },
   { id: "harbor",    name: "Harbor",    cn: "海神",   role: "controller" },
   { id: "clove",     name: "Clove",     cn: "暮蝶",   role: "controller" },
+  { id: "miks",      name: "Miks",                    role: "controller" },
 
   // Initiators 先锋
   { id: "sova",      name: "Sova",      cn: "猎枭",   role: "initiator" },
@@ -40,5 +41,18 @@ window.AGENTS = [
 
 window.MAPS = [
   "Abyss", "Ascent", "Bind", "Breeze", "Corrode", "Fracture", "Haven",
-  "Icebox", "Lotus", "Pearl", "Split", "Sunset",
+  "Icebox", "Lotus", "Pearl", "Split", "Summit", "Sunset",
+];
+
+// Chinese map names, shown when the site is in 中文 mode.
+window.MAP_CN = {
+  Abyss: "幽邃地窟", Ascent: "亚海悬城", Bind: "源工重镇", Breeze: "微风岛屿",
+  Fracture: "裂变峡谷", Haven: "隐世修所", Icebox: "森寒冬港", Lotus: "莲华古城",
+  Pearl: "深海明珠", Split: "霓虹町", Sunset: "日落之城",
+};
+
+// Sites with photo (stand / aim / result) lineups for every agent and map.
+// {agent} and {map} are replaced with the agent id and the lowercase map name.
+window.PHOTO_SOURCES = [
+  { name: "Blitz.gg", url: "https://blitz.gg/valorant/lineups/{agent}/{map}" },
 ];

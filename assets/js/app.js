@@ -4,6 +4,8 @@
   const AGENTS = window.AGENTS || [];
   const LINEUPS = window.LINEUPS || [];
   const MAPS = window.MAPS || [];
+  const MAP_CN = window.MAP_CN || {};
+  const PHOTO_SOURCES = window.PHOTO_SOURCES || [];
   const agentById = Object.fromEntries(AGENTS.map((a) => [a.id, a]));
 
   // ---------- i18n ----------
@@ -13,6 +15,7 @@
       heroTitle: "英雄点位",
       heroSub: "选择英雄，查看视频教程和图文教程",
       all: "全部",
+      allMaps: "全地图",
       duelist: "决斗者",
       initiator: "先锋",
       controller: "控场者",
@@ -24,29 +27,35 @@
       side: "攻防",
       attack: "进攻",
       defense: "防守",
+      both: "双方",
       ability: "技能",
+      language: "语言",
       site: "包点",
+      guide: "合集",
       emptyFilter: "没有符合筛选条件的点位。",
-      emptyAgent: "这个英雄还没有点位。在 data/lineups.js 里添加吧！",
+      emptyAgent: "这个英雄还没有视频点位。可以先看下方的图文点位库，或在 data/lineups.js 里添加！",
       video: "视频教程",
       photos: "图文教程",
       noVideo: "这个点位暂无视频。",
-      noPhotos: "这个点位暂无图文教程。",
       openVideo: "打开视频 ↗",
-      example: "示例",
+      openOriginal: "在原网站观看 / 给作者点赞 ↗",
+      photoLibrary: "图文点位库",
+      photoLibrarySub: "每个点位都有站位、瞄准、落点截图，按地图选择：",
+      photoExternal: "这个视频合集没有自带截图。下面是同英雄同地图的图文点位（站位 → 瞄准 → 落点）：",
       hasVideo: "视频",
       difficulty: "难度",
       notFound: "找不到这个页面。",
       back: "返回首页",
       searchResults: "搜索结果",
       searchEmpty: "没有找到相关点位。",
-      footer: "Valo Lineup · 非官方粉丝站，与 Riot Games 无关",
+      footer: "Valo Lineup · 非官方粉丝站，与 Riot Games 无关 · 视频版权归原作者所有",
     },
     en: {
       searchPlaceholder: "Search agents, maps, abilities, lineups…",
       heroTitle: "Agent Lineups",
       heroSub: "Pick an agent to see video and photo tutorials",
       all: "All",
+      allMaps: "All maps",
       duelist: "Duelist",
       initiator: "Initiator",
       controller: "Controller",
@@ -58,25 +67,32 @@
       side: "Side",
       attack: "Attack",
       defense: "Defense",
+      both: "Both sides",
       ability: "Ability",
+      language: "Language",
       site: "Site",
+      guide: "Full guide",
       emptyFilter: "No lineups match these filters.",
-      emptyAgent: "No lineups for this agent yet. Add some in data/lineups.js!",
+      emptyAgent: "No video lineups for this agent yet. Try the photo library below, or add some in data/lineups.js!",
       video: "Video",
       photos: "Photo Guide",
       noVideo: "No video for this lineup yet.",
-      noPhotos: "No photo guide for this lineup yet.",
       openVideo: "Open video ↗",
-      example: "Example",
+      openOriginal: "Watch on the original site / support the creator ↗",
+      photoLibrary: "Photo lineup library",
+      photoLibrarySub: "Stand, aim and result screenshots for every lineup — pick a map:",
+      photoExternal: "This video guide has no screenshots of its own. Photo lineups (stand → aim → result) for the same agent and map:",
       hasVideo: "Video",
       difficulty: "Difficulty",
       notFound: "Page not found.",
       back: "Back to home",
       searchResults: "Search results",
       searchEmpty: "No lineups found.",
-      footer: "Valo Lineup · Unofficial fan site, not affiliated with Riot Games",
+      footer: "Valo Lineup · Unofficial fan site, not affiliated with Riot Games · Videos belong to their creators",
     },
   };
+
+  const LANG_LABEL = { zh: "中文", en: "EN", es: "ES", pt: "PT", ja: "日本語", ko: "한국어" };
 
   let lang = readPref("lang", "zh");
   const t = (key) => I18N[lang][key] ?? key;
@@ -94,7 +110,34 @@
 
   const agentName = (a) => (lang === "zh" && a.cn ? a.cn : a.name);
   const agentSubName = (a) => (lang === "zh" && a.cn ? a.name : a.cn || "");
-  const lineupsFor = (agentId) => LINEUPS.filter((l) => l.agent === agentId);
+  const mapName = (m) => (m === "All" ? t("allMaps") : lang === "zh" && MAP_CN[m] ? MAP_CN[m] : m);
+  const agentsOf = (l) => (Array.isArray(l.agent) ? l.agent : [l.agent]);
+  const lineupsFor = (agentId) => LINEUPS.filter((l) => agentsOf(l).includes(agentId));
+
+  function photoLinks(agentId, maps) {
+    return PHOTO_SOURCES.flatMap((src) =>
+      maps.map((m) => ({
+        source: src.name,
+        map: m,
+        url: src.url.replace("{agent}", encodeURIComponent(agentId)).replace("{map}", encodeURIComponent(m.toLowerCase())),
+      }))
+    );
+  }
+
+  function videoSourceUrl(v) {
+    if (!v) return "";
+    if (v.type === "youtube") return `https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}${v.start ? `&t=${parseInt(v.start, 10)}s` : ""}`;
+    if (v.type === "bilibili") return `https://www.bilibili.com/video/${encodeURIComponent(v.bvid)}/${v.page > 1 ? `?p=${parseInt(v.page, 10)}` : ""}`;
+    if (v.type === "link") return v.url;
+    return "";
+  }
+
+  function thumbnailOf(l) {
+    if (l.thumbnail) return l.thumbnail;
+    if (l.steps && l.steps.length) return l.steps[l.steps.length - 1].img;
+    if (l.video && l.video.type === "youtube") return `https://i.ytimg.com/vi/${encodeURIComponent(l.video.id)}/hqdefault.jpg`;
+    return "";
+  }
 
   function avatar(a, cls = "") {
     const inner = a.avatar
@@ -111,6 +154,10 @@
 
   function sideBadge(side) {
     return side ? `<span class="badge ${esc(side)}">${esc(t(side))}</span>` : "";
+  }
+
+  function langBadge(code) {
+    return code ? `<span class="badge lang">${esc(LANG_LABEL[code] || code.toUpperCase())}</span>` : "";
   }
 
   function chip(label, active, attrs) {
@@ -154,16 +201,20 @@
     if (!a) return viewNotFound();
 
     const all = lineupsFor(id);
-    const f = (state.filters[id] ||= { map: "all", side: "all", ability: "all" });
+    const f = (state.filters[id] ||= { map: "all", side: "all", ability: "all", lang: "all" });
 
     const mapsUsed = MAPS.filter((m) => all.some((l) => l.map === m))
-      .concat([...new Set(all.map((l) => l.map))].filter((m) => !MAPS.includes(m)));
+      .concat([...new Set(all.map((l) => l.map))].filter((m) => !MAPS.includes(m) && m !== "All"))
+      .concat(all.some((l) => l.map === "All") ? ["All"] : []);
     const abilities = [...new Set(all.map((l) => l.ability).filter(Boolean))];
+    const langs = [...new Set(all.map((l) => l.lang).filter(Boolean))];
+    const sides = ["attack", "defense", "both"].filter((s) => all.some((l) => l.side === s));
 
     const shown = all.filter((l) =>
       (f.map === "all" || l.map === f.map) &&
       (f.side === "all" || l.side === f.side) &&
-      (f.ability === "all" || l.ability === f.ability)
+      (f.ability === "all" || l.ability === f.ability) &&
+      (f.lang === "all" || l.lang === f.lang)
     );
 
     const countBy = (key, val) => all.filter((l) => l[key] === val).length;
@@ -176,6 +227,8 @@
         </div>
       </div>`;
 
+    const photo = photoLinks(id, MAPS);
+
     app.innerHTML = `
       <div class="crumbs"><a href="#/">${t("home")}</a> / ${esc(agentName(a))}</div>
       <div class="agent-head role-${esc(a.role)}">
@@ -186,12 +239,19 @@
         </div>
       </div>
       ${all.length ? `
-        ${filterRow(t("map"), "map", mapsUsed)}
-        ${filterRow(t("side"), "side", ["attack", "defense"].filter((s) => countBy("side", s)), (s) => t(s))}
-        ${abilities.length > 1 ? filterRow(t("ability"), "ability", abilities) : ""}
+        ${filterRow(t("map"), "map", mapsUsed, mapName)}
+        ${sides.length > 1 ? filterRow(t("side"), "side", sides, (s) => t(s)) : ""}
+        ${langs.length > 1 ? filterRow(t("language"), "lang", langs, (c) => esc(LANG_LABEL[c] || c)) : ""}
         ${shown.length ? `<div class="lineup-grid">${shown.map((l) => lineupCard(l, false)).join("")}</div>`
                        : `<div class="empty">${t("emptyFilter")}</div>`}
-      ` : `<div class="empty">${t("emptyAgent")}</div>`}`;
+      ` : `<div class="empty">${t("emptyAgent")}</div>`}
+      ${photo.length ? `
+        <h2>🖼 ${t("photoLibrary")}</h2>
+        <p class="sub">${t("photoLibrarySub")}</p>
+        <div class="chips">
+          ${photo.map((p) => `<a class="chip" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(mapName(p.map))} ↗</a>`).join("")}
+        </div>
+        <p class="source-note">${[...new Set(photo.map((p) => p.source))].map(esc).join(" · ")}</p>` : ""}`;
 
     app.querySelectorAll("[data-k]").forEach((b) =>
       b.addEventListener("click", () => { f[b.dataset.k] = b.dataset.v; viewAgent(id); })
@@ -199,25 +259,27 @@
   }
 
   function lineupCard(l, showAgent) {
-    const a = agentById[l.agent];
-    const thumb = l.thumbnail || (l.steps && l.steps.length ? l.steps[l.steps.length - 1].img : "");
+    const agents = agentsOf(l).map((x) => agentById[x]).filter(Boolean);
+    const thumb = thumbnailOf(l);
     return `
       <a class="lineup-card" href="#/lineup/${encodeURIComponent(l.id)}">
         <div class="thumb">
-          ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy">` : ""}
+          <div class="thumb-text">${esc(mapName(l.map))}</div>
+          ${thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" onerror="this.remove()">` : ""}
           <div class="badges">
             ${l.video ? `<span class="badge has-video">▶ ${t("hasVideo")}</span>` : ""}
-            ${l.example ? `<span class="badge example">${t("example")}</span>` : ""}
+            ${l.kind === "guide" ? `<span class="badge guide">${t("guide")}</span>` : ""}
+            ${l.example ? `<span class="badge example">Example</span>` : ""}
           </div>
         </div>
         <div class="body">
-          ${showAgent && a ? `<div class="agent-line">${avatar(a)} ${esc(agentName(a))}</div>` : ""}
+          ${showAgent && agents.length ? `<div class="agent-line">${agents.map((a) => avatar(a)).join("")} ${agents.map((a) => esc(agentName(a))).join(" · ")}</div>` : ""}
           <div class="title">${esc(l.title)}</div>
           <div class="meta">
-            <span class="badge">${esc(l.map)}</span>
+            <span class="badge">${esc(mapName(l.map))}</span>
             ${l.site ? `<span class="badge">${esc(l.site)}</span>` : ""}
             ${sideBadge(l.side)}
-            ${l.ability ? `<span class="badge">${esc(l.ability)}</span>` : ""}
+            ${langBadge(l.lang)}
             ${stars(l.difficulty)}
           </div>
         </div>
@@ -226,16 +288,19 @@
 
   function videoEmbed(v) {
     if (!v) return `<div class="empty">${t("noVideo")}</div>`;
+    let player = "";
     switch (v.type) {
       case "youtube": {
         const start = v.start ? `?start=${parseInt(v.start, 10)}` : "";
-        return `<div class="video-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}${start}"
+        player = `<div class="video-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}${start}"
           allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>`;
+        break;
       }
       case "bilibili": {
         const page = parseInt(v.page || 1, 10);
-        return `<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=${encodeURIComponent(v.bvid)}&page=${page}&autoplay=0&high_quality=1"
+        player = `<div class="video-wrap"><iframe src="https://player.bilibili.com/player.html?bvid=${encodeURIComponent(v.bvid)}&page=${page}&autoplay=0&high_quality=1"
           allow="fullscreen" allowfullscreen loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"></iframe></div>`;
+        break;
       }
       case "file":
         return `<div class="video-wrap"><video src="${esc(v.src)}" controls playsinline preload="metadata"${v.poster ? ` poster="${esc(v.poster)}"` : ""}></video></div>`;
@@ -244,29 +309,57 @@
       default:
         return `<div class="empty">${t("noVideo")}</div>`;
     }
+    const src = videoSourceUrl(v);
+    return player + (src ? `<p class="source-note"><a href="${esc(src)}" target="_blank" rel="noopener">${t("openOriginal")}</a></p>` : "");
+  }
+
+  function photoPanel(l) {
+    const steps = l.steps || [];
+    if (steps.length) {
+      return `
+        <div class="steps">
+          ${steps.map((s, i) => `
+            <div class="step">
+              <img src="${esc(s.img)}" alt="${esc(s.caption || "")}" data-step="${i}" loading="lazy">
+              <div class="text"><div class="num">${i + 1}</div><div class="caption">${esc(s.caption || "")}</div></div>
+            </div>`).join("")}
+        </div>`;
+    }
+    const maps = l.map === "All" || !MAPS.includes(l.map) ? MAPS : [l.map];
+    const groups = agentsOf(l).filter((x) => agentById[x]).map((x) => ({ agent: agentById[x], links: photoLinks(x, maps) }));
+    return `
+      <p>${t("photoExternal")}</p>
+      ${groups.map((g) => `
+        <div class="photo-group">
+          <div class="agent-line">${avatar(g.agent)} <b>${esc(agentName(g.agent))}</b></div>
+          <div class="chips">
+            ${g.links.map((p) => `<a class="chip" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(mapName(p.map))} · ${esc(p.source)} ↗</a>`).join("")}
+          </div>
+        </div>`).join("")}`;
   }
 
   function viewLineup(id, tab) {
     const l = LINEUPS.find((x) => x.id === id);
     if (!l) return viewNotFound();
-    const a = agentById[l.agent] || { id: l.agent, name: l.agent, role: "" };
+    const agents = agentsOf(l).map((x) => agentById[x] || { id: x, name: x, role: "" });
     const steps = l.steps || [];
     const active = tab === "photos" || tab === "video" ? tab : (l.video ? "video" : "photos");
 
     app.innerHTML = `
       <div class="crumbs">
         <a href="#/">${t("home")}</a> /
-        <a href="#/agent/${esc(a.id)}">${esc(agentName(a))}</a> /
+        ${agents.map((a) => `<a href="#/agent/${esc(a.id)}">${esc(agentName(a))}</a>`).join(", ")} /
         ${esc(l.title)}
       </div>
       <div class="detail-head">
         <h1>${esc(l.title)}</h1>
         <div class="meta">
-          ${l.example ? `<span class="badge example">${t("example")}</span>` : ""}
-          <span class="badge">${esc(l.map)}</span>
+          ${l.kind === "guide" ? `<span class="badge guide">${t("guide")}</span>` : ""}
+          <span class="badge">${esc(mapName(l.map))}</span>
           ${l.site ? `<span class="badge">${t("site")} ${esc(l.site)}</span>` : ""}
           ${sideBadge(l.side)}
           ${l.ability ? `<span class="badge">${esc(l.ability)}</span>` : ""}
+          ${langBadge(l.lang)}
           ${stars(l.difficulty)}
           ${(l.tags || []).map((g) => `<span class="badge">#${esc(g)}</span>`).join("")}
         </div>
@@ -274,18 +367,9 @@
       ${l.notes ? `<div class="notes">${esc(l.notes)}</div>` : ""}
       <div class="tabs" role="tablist">
         <button type="button" class="tab${active === "video" ? " active" : ""}" data-tab="video">▶ ${t("video")}</button>
-        <button type="button" class="tab${active === "photos" ? " active" : ""}" data-tab="photos">🖼 ${t("photos")} (${steps.length})</button>
+        <button type="button" class="tab${active === "photos" ? " active" : ""}" data-tab="photos">🖼 ${t("photos")}${steps.length ? ` (${steps.length})` : " ↗"}</button>
       </div>
-      <div class="panel">
-        ${active === "video" ? videoEmbed(l.video) : steps.length ? `
-          <div class="steps">
-            ${steps.map((s, i) => `
-              <div class="step">
-                <img src="${esc(s.img)}" alt="${esc(s.caption || "")}" data-step="${i}" loading="lazy">
-                <div class="text"><div class="num">${i + 1}</div><div class="caption">${esc(s.caption || "")}</div></div>
-              </div>`).join("")}
-          </div>` : `<div class="empty">${t("noPhotos")}</div>`}
-      </div>`;
+      <div class="panel">${active === "video" ? videoEmbed(l.video) : photoPanel(l)}</div>`;
 
     app.querySelectorAll("[data-tab]").forEach((b) =>
       b.addEventListener("click", () => {
@@ -301,8 +385,9 @@
   function viewSearch(q) {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean);
     const hits = LINEUPS.filter((l) => {
-      const a = agentById[l.agent] || {};
-      const hay = [l.title, l.map, l.site, l.ability, l.side, t(l.side), a.name, a.cn, l.notes, ...(l.tags || [])]
+      const agents = agentsOf(l).map((x) => agentById[x] || {});
+      const hay = [l.title, l.map, MAP_CN[l.map], l.site, l.ability, l.side, t(l.side), l.notes, LANG_LABEL[l.lang],
+        ...agents.flatMap((a) => [a.name, a.cn]), ...(l.tags || [])]
         .join(" ").toLowerCase();
       return words.every((w) => hay.includes(w));
     });
