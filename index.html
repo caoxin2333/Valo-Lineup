@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Valo Lineup</title>
+  <meta name="description" content="Valorant agent lineups with video and photo tutorials · 无畏契约点位视频与图文教程">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">VALO<span>LINEUP</span></a>
+    <div class="topbar-search">
+      <input id="global-search" type="search" autocomplete="off">
+    </div>
+    <button id="lang-toggle" class="lang-toggle" type="button">EN</button>
+  </header>
+
+  <main id="app"></main>
+
+  <div id="lightbox" class="lightbox" hidden>
+    <button class="lb-close" type="button" aria-label="Close">×</button>
+    <button class="lb-prev" type="button" aria-label="Previous">‹</button>
+    <figure>
+      <img alt="">
+      <figcaption></figcaption>
+    </figure>
+    <button class="lb-next" type="button" aria-label="Next">›</button>
+  </div>
+
+  <footer class="footer" data-i18n="footer"></footer>
+
+  <script src="data/agents.js"></script>
+  <script src="data/lineups.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
