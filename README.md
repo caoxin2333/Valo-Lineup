@@ -82,6 +82,26 @@ Lineups are stored in `data/lineups.js`:
 
 Set `kind: "guide"` on a video that covers many lineups. It's then listed under 视频合集 instead of 点位教程.
 
+### Splitting a video guide into single lineups
+
+A single lineup can be cut from a guide video without copying anything from it:
+
+```js
+{
+  id: "sova-bind-a-short-recon", from: "sova-bind-25",   // `from` links back to the guide
+  agent: "sova", map: "Bind", side: "attack", site: "A", ability: "Recon Bolt",
+  title: "A Short recon",
+  video: { type: "youtube", id: "eTxQTyMcgog", start: 95, end: 118 },  // just this lineup's part
+  steps: [
+    { at: 97,  caption: "站位：..." },    // `at` = seconds into the video
+    { at: 104, caption: "瞄准：..." },
+    { at: 112, caption: "落点：..." },
+  ],
+},
+```
+
+A step with `at` instead of `img` shows the embedded player paused on that moment. The guide's page lists every lineup split from it.
+
 ## Where the existing content comes from
 
 The 88 video guides in `data/lineups.js` (77 YouTube, 11 Bilibili) were collected from YouTube and Bilibili search in October 2026. Each one covers many lineups on a map, so they are all marked as `kind: "guide"`. They are **embedded, not copied**: they play from the original site, and each one links back to its creator.

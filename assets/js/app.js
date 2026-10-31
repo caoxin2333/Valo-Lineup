@@ -62,6 +62,8 @@
       searchEmpty: "没有找到相关点位。",
       previewBanner: "预览 — 这个点位还没有保存到网站。",
       backToMaker: "← 返回制作工具",
+      fromGuide: "出自视频合集：",
+      inThisGuide: "这个合集里的点位",
       footer: "Valo Lineup · 非官方粉丝站，与 Riot Games 无关 · 视频版权归原作者所有",
     },
     en: {
@@ -114,6 +116,8 @@
       searchEmpty: "No lineups found.",
       previewBanner: "Preview — this lineup is not saved to the site yet.",
       backToMaker: "← Back to the lineup maker",
+      fromGuide: "From the video guide:",
+      inThisGuide: "Lineups in this guide",
       footer: "Valo Lineup · Unofficial fan site, not affiliated with Riot Games · Videos belong to their creators",
     },
   };
@@ -176,9 +180,80 @@
 
   function thumbnailOf(l) {
     if (l.thumbnail) return l.thumbnail;
-    if (l.steps && l.steps.length) return l.steps[l.steps.length - 1].img;
+    const withImg = (l.steps || []).filter((s) => s.img);
+    if (withImg.length) return withImg[withImg.length - 1].img;
     if (l.video && l.video.type === "youtube") return `https://i.ytimg.com/vi/${encodeURIComponent(l.video.id)}/hqdefault.jpg`;
     return "";
+  }
+
+  function fmtTime(sec) {
+    const s = Math.floor(sec);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }
+
+  // ---------- frame steps ----------
+  // A step with `at` (seconds) instead of `img` shows the lineup's own embedded video
+  // paused on that moment, so photo steps can come from a video without copying its frames.
+  let ytApi = null;
+  function loadYouTubeApi() {
+    if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+    if (ytApi) return ytApi;
+    ytApi = new Promise((resolve, reject) => {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if (prev) prev(); resolve(window.YT); };
+      const s = document.createElement("script");
+      s.src = "https://www.youtube.com/iframe_api";
+      s.onerror = () => { ytApi = null; reject(new Error("YouTube API unavailable")); };
+      document.head.appendChild(s);
+    });
+    return ytApi;
+  }
+
+  function frameFallback(el, v, at) {
+    const url = videoSourceUrl({ ...v, start: at });
+    el.innerHTML = `<a class="frame-link" href="${esc(url)}" target="_blank" rel="noopener">▶ ${fmtTime(at)} ↗</a>`;
+  }
+
+  function mountFrame(el, v) {
+    const at = parseFloat(el.dataset.at) || 0;
+    if (LINK_ONLY_VIDEO) return frameFallback(el, v, at);
+    if (v.type === "bilibili") {
+      el.innerHTML = `<iframe src="https://player.bilibili.com/player.html?bvid=${encodeURIComponent(v.bvid)}&page=${secs(v.page || 1) || 1}&t=${Math.floor(at)}&autoplay=0"
+        allow="fullscreen" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"></iframe>`;
+      return;
+    }
+    loadYouTubeApi().then((YT) => {
+      const holder = document.createElement("div");
+      el.appendChild(holder);
+      let frozen = false;
+      new YT.Player(holder, {
+        videoId: v.id,
+        host: "https://www.youtube-nocookie.com",
+        playerVars: { start: Math.floor(at), autoplay: 1, mute: 1, rel: 0, playsinline: 1 },
+        events: {
+          onStateChange: (e) => {
+            if (frozen || e.data !== YT.PlayerState.PLAYING) return;
+            frozen = true;
+            e.target.seekTo(at, true);
+            e.target.pauseVideo();
+          },
+        },
+      });
+    }).catch(() => frameFallback(el, v, at));
+  }
+
+  function setupFrames(container, v) {
+    const frames = container.querySelectorAll("[data-at]");
+    if (!frames.length || !v) return;
+    if (!("IntersectionObserver" in window)) return frames.forEach((el) => mountFrame(el, v));
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        io.unobserve(en.target);
+        mountFrame(en.target, v);
+      });
+    }, { rootMargin: "200px" });
+    frames.forEach((el) => io.observe(el));
   }
 
   function avatar(a, cls = "") {
@@ -386,11 +461,14 @@
   function photoPanel(l) {
     const steps = l.steps || [];
     if (steps.length) {
+      let imgIndex = 0;
       return `
         <div class="steps">
           ${steps.map((s, i) => `
             <div class="step">
-              <img src="${esc(s.img)}" alt="${esc(s.caption || "")}" data-step="${i}" loading="lazy">
+              ${s.img
+                ? `<img src="${esc(s.img)}" alt="${esc(s.caption || "")}" data-step="${imgIndex++}" loading="lazy">`
+                : `<div class="frame" data-at="${esc(s.at)}"><span class="frame-time">${fmtTime(s.at || 0)}</span></div>`}
               <div class="text"><div class="num">${i + 1}</div><div class="caption">${esc(s.caption || "")}</div></div>
             </div>`).join("")}
         </div>`;
@@ -414,6 +492,9 @@
     if (!l) return viewNotFound();
     const agents = agentsOf(l).map((x) => agentById[x] || { id: x, name: x, role: "" });
     const steps = l.steps || [];
+    const imgSteps = steps.filter((s) => s.img);
+    const parent = l.from && LINEUPS.find((x) => x.id === l.from);
+    const children = LINEUPS.filter((x) => x.from === l.id);
 
     app.innerHTML = `
       ${preview ? `<div class="notes preview-banner">${t("previewBanner")} <a href="#/maker">${t("backToMaker")}</a></div>` : ""}
@@ -436,6 +517,7 @@
         </div>
       </div>
       ${l.notes ? `<div class="notes">${esc(l.notes)}</div>` : ""}
+      ${parent ? `<p class="source-note">${t("fromGuide")} <a href="#/lineup/${encodeURIComponent(parent.id)}">${esc(parent.title)}</a></p>` : ""}
       <section class="section">
         <h2>▶ ${t("video")}</h2>
         ${videoEmbed(l.video)}
@@ -443,11 +525,17 @@
       <section class="section">
         <h2>🖼 ${t("photos")}${steps.length ? ` <span class="count-pill">${steps.length}</span>` : ""}</h2>
         ${photoPanel(l)}
-      </section>`;
+      </section>
+      ${children.length ? `
+        <section class="section">
+          <h2>${t("inThisGuide")} <span class="count-pill">${children.length}</span></h2>
+          <div class="lineup-grid">${children.map((c) => lineupCard(c, false)).join("")}</div>
+        </section>` : ""}`;
 
     app.querySelectorAll("[data-step]").forEach((img) =>
-      img.addEventListener("click", () => openLightbox(steps, +img.dataset.step))
+      img.addEventListener("click", () => openLightbox(imgSteps, +img.dataset.step))
     );
+    setupFrames(app, l.video);
   }
 
   function viewSearch(q) {
