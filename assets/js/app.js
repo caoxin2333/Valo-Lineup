@@ -229,7 +229,7 @@
       new YT.Player(holder, {
         videoId: v.id,
         host: "https://www.youtube-nocookie.com",
-        playerVars: { start: Math.floor(at), autoplay: 1, mute: 1, rel: 0, playsinline: 1 },
+        playerVars: { start: Math.floor(at), autoplay: 1, mute: 1, rel: 0, playsinline: 1, controls: 0, disablekb: 1 },
         events: {
           onStateChange: (e) => {
             if (frozen || e.data !== YT.PlayerState.PLAYING) return;
@@ -468,7 +468,7 @@
             <div class="step">
               ${s.img
                 ? `<img src="${esc(s.img)}" alt="${esc(s.caption || "")}" data-step="${imgIndex++}" loading="lazy">`
-                : `<div class="frame" data-at="${esc(s.at)}"><span class="frame-time">${fmtTime(s.at || 0)}</span></div>`}
+                : `<div class="frame${s.zoom ? " zoomed" : ""}" data-at="${esc(s.at)}"${s.zoom ? ` style="--zoom:${Number(s.zoom)}"` : ""}><span class="frame-time">${fmtTime(s.at || 0)}</span></div>`}
               <div class="text"><div class="num">${i + 1}</div><div class="caption">${esc(s.caption || "")}</div></div>
             </div>`).join("")}
         </div>`;
