@@ -94,13 +94,13 @@ A single lineup can be cut from a guide video without copying anything from it:
   video: { type: "youtube", id: "eTxQTyMcgog", start: 95, end: 118 },  // just this lineup's part
   steps: [
     { at: 97,  caption: "站位：..." },    // `at` = seconds into the video
-    { at: 104, caption: "瞄准：..." },
+    { at: 104, zoom: 3, caption: "瞄准：..." },
     { at: 112, caption: "落点：..." },
   ],
 },
 ```
 
-A step with `at` instead of `img` shows the embedded player paused on that moment. The guide's page lists every lineup split from it.
+A step with `at` instead of `img` shows the embedded player paused on that moment. Add `zoom` to enlarge that frame around its center, where the in-game crosshair sits, and ring the crosshair. The guide's page lists every lineup split from it.
 
 ## Where the existing content comes from
 
